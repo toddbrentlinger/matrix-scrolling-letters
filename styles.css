@@ -1,0 +1,45 @@
+html {
+    font-size: 62.5%; /* 1rem = 10px */
+    color: black;
+    box-sizing: border-box;
+    background-color: black;
+}
+
+*, *:before, *:after {
+    box-sizing: inherit;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-size: 1.6rem; /* 16px */
+}
+
+main {
+    min-height: 100vh;
+    text-align: center;
+    display: flex;
+    /* border: 1px solid green; */
+    font-weight: bold;
+}
+
+.col {
+    width: 1em;
+    flex: 1;
+}
+
+.row {
+    height: 1.5em;
+}
+
+.row.wet {
+    color: black;
+    transition: color 5s cubic-bezier(0.5, 1, 0.89, 1); /* easeOutQuad */
+}
+
+.row.drop {
+    color: hsl(120, 100%, 25%);
+}
