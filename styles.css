@@ -23,6 +23,7 @@ main {
     text-align: center;
     display: flex;
     /* border: 1px solid green; */
+    font-size: 1rem;
     font-weight: bold;
 }
 
@@ -33,13 +34,26 @@ main {
 
 .row {
     height: 1.5em;
+    /* Flip/Mirror */
+    -moz-transform: scale(-1, 1);
+    -webkit-transform: scale(-1, 1);
+    -o-transform: scale(-1, 1);
+    -ms-transform: scale(-1, 1);
+    transform: scale(-1, 1);
 }
 
 .row.wet {
-    color: black;
-    transition: color 5s cubic-bezier(0.5, 1, 0.89, 1); /* easeOutQuad */
+    color: hsl(120, 100%, 0%);
+    transition: none;
 }
 
-.row.drop {
-    color: hsl(120, 100%, 25%);
+div.row.drop {
+    color: hsl(120, 100%, 100%);
+    transition: none;
+}
+
+div.row.drop-clear {
+    color: hsl(120, 100%, 0%);
+    /*
+    transition: color 5s cubic-bezier(0.5, 1, 0.89, 1); /* easeOutQuad */
 }
