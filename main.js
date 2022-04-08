@@ -1,111 +1,194 @@
 'use strict';
 
-class MatrixScrollingLettersDrop {
+/*
+TODO:
+- Put all drops and drop-clears into same array sorted by row index number
+  to reduce script size and function count.
+- Reduce Drop and DropClear classes by putting more repeated code into Drop 
+  base class.
+ */
+
+class MatrixScrollDrop {
     /**
-     * 
-     * @param {Element} element 
-     * @param {Number} index
+     * @constructor
+     * @param {Element} element
      */
-    constructor(element, index) {
-        this.setNewDrop(element, index);
+    constructor(element) {
+        this.set(element);
     }
 
-    setNewDrop(newElement, newIndex) {
+    /**
+     * 
+     * @param {Element} newElement
+     */
+    set(newElement) {
         this.element = newElement;
-        this.index = newIndex;
 
-        if (!this.element) debugger;
-        this.element.classList.remove('drop-clear', 'wet');
+        // Remove styling if class is 'wet'. Shouldn't have to remove 'drop-clear'.
+        this.element.classList.remove('wet');
         this.element.style.color = '';
+
         this.element.classList.add('drop');
+
+        this.element.textContent = String.fromCodePoint(MatrixScroll.getRandomCharCode());
+    }
+
+    /**
+     * 
+     * @returns {Element|null} Element drop was moved to OR null if at bottom of column
+     */
+    incrementDown() {
+        // Change row with class 'drop' to 'wet' with random font color lightness
+        this.element.classList.remove('drop');
+        this.element.classList.add('wet');
+        this.element.style.color = `hsl(120, 100%, ${10 + Math.floor(Math.random() * 41)}%)`; // 10-50
+
+        // Move drop to next row OR return null if at bottom of column
+        const nextRow = this.element.nextSibling; // Null if at bottom of column
+        if (nextRow)
+            this.set(nextRow);
+        return nextRow;
     }
 }
 
-class MatrixScrollingLettersDropClear {
+class MatrixScrollDropClear extends MatrixScrollDrop {
     /**
      * 
-     * @param {Element} element 
-     * @param {Number} index
+     * @param {Element} newElement
      */
-     constructor(element, index) {
-        this.setNewDropClear(element, index);
-    }
-
-    setNewDropClear(newElement, newIndex) {
+    set(newElement) {
         this.element = newElement;
-        this.index = newIndex;
-        this.element.classList.remove('drop', 'wet');
+        
+        // Remove styling if class is 'wet'. Shouldn't have to remove 'drop'.
+        this.element.classList.remove('wet');
         this.element.style.color = '';
+
         this.element.classList.add('drop-clear');
     }
+
+    /**
+     * 
+     * @returns {Element|null} Element drop was moved to OR null if at bottom of column
+     */
+     incrementDown() {
+        // Remove 'drop-clear' class
+        this.element.classList.remove('drop-clear');
+
+        // Move drop to next row OR return null if at bottom of column
+        const nextRow = this.element.nextSibling; // Null if at bottom of column
+        if (nextRow)
+            this.set(nextRow);
+        return nextRow;
+    }
 }
 
-class MatrixScrollingLettersColumn {
+class MatrixScrollColumn {
     /**
-     * Constructor for MatrixScrollingLettersColumn class.
+     * Constructor for MatrixScrollColumn class.
      * @constructor
      * @param {Element} colElement 
      * @param {NodeList} rowsNodeList 
      */
     constructor(colElement, rowsNodeList) {
-        this.element = colElement;
         this.drops = [];
         this.dropClears = [];
 
+        // If no rows provided in arguments, query all 'row' class nodes in column
         if (!rowsNodeList)
-        rowsNodeList = this.element.querySelectorAll('.row');
-        
+            rowsNodeList = colElement.querySelectorAll('.row');
+
         this.rows = Array.from(rowsNodeList);
     }
 
+    /** Repeatedly called on set interval. */
     tick() {
-        //if (this.drops.length || this.dropClears.length) debugger;
-        // Drops
+        // Increment Drops and Drop-Clears
+        this.incrementDrops();
+        this.incrementDropClears();
+
+        // Add new drops and drop-clears
+        this.addRandomDropsAndDropClears();
+    }
+
+    incrementDrops() {
         let drop;
+        // Loop in reverse since removing an element would skip next item in loop
         for (let i = this.drops.length - 1; i >= 0; i--) {
             drop = this.drops[i];
-            // Change row with drop to 'wet' with random font color lightness
-            drop.element.classList.remove('drop');
-            drop.element.classList.add('wet');
-            drop.element.style.color = `hsl(120, 100%, ${10 + Math.floor(Math.random() * 41)}%)`; // 10-50
-
-            // Move drop to next row OR remove drop if at bottom of column
-            if (drop.index >= this.rows.length - 1) {
-                // Remove drop
+            // If incrementing drop returns null, remove drop from array of drops
+            if (!drop.incrementDown()) {
                 this.drops.splice(i, 1);
-            } else {
-                if (!this.rows[drop.index + 1]) debugger;
-                // Lower drop
-                drop.setNewDrop(this.rows[drop.index + 1], drop.index + 1);
-            }
-        }
-
-        // Drop-Clears
-        let dropClear;
-        for (let i = this.dropClears.length - 1; i >= 0; i--) {
-            dropClear = this.dropClears[i];
-            // Remove 'drop-clear' class
-            dropClear.element.classList.remove('drop-clear');
-
-            // Move drop-clear to next row OR remove drop-clear
-            if (dropClear.index >= this.rows.length - 1) {
-                // Remove drop-clear
-                this.dropClears.splice(i, 1);
-            } else {
-                // Lower drop
-                dropClear.setNewDropClear(this.rows[dropClear.index + 1], dropClear.index + 1);
             }
         }
     }
 
-    addDrop(rowElement, index) {
-        const newDrop = new MatrixScrollingLettersDrop(rowElement, index);
+    incrementDropClears() {
+        // Loop in reverse since removing an element would skip next item in loop
+        let dropClear;
+        for (let i = this.dropClears.length - 1; i >= 0; i--) {
+            dropClear = this.dropClears[i];
+            // If incrementing drop-clear returns null, remove drop-clear from array of drop-clears
+            if (!dropClear.incrementDown()) {
+                this.dropClears.splice(i, 1);
+            }
+        }
+    }
+
+    addRandomDropsAndDropClears(dropLikelihood = 0.01, dropClearLikelihood = 0.02) {
+        const bShouldAddDrop = Math.random() < dropLikelihood;
+        const bShouldAddDropClear = Math.random() < dropClearLikelihood;
+
+        // Return if should NOT add either drop or clear
+        if (!bShouldAddDrop && !bShouldAddDropClear) return;
+
+        // Find row indices with no 'drop', 'wet', or 'drop-clear' class (only 'row')
+        // const emptyRowsNodeArr = Array.from(
+        //     this.element.querySelectorAll(':not(.drop):not(.wet):not(.drop-clear)')
+        // );
+        const emptyRowsNodeArr = this.rows.filter(row => () => {
+            const classList = row.classList;
+            return (!classList.contains('drop') && !classList.contains('wet') && !classList.contains('drop-clear'));
+        });
+
+        // If no empty rows, add drop-clear to first row and return
+        if (!emptyRowsNodeArr) {
+            debugger;
+            this.addDropClearToRow(this.rows[0]);
+            return;
+        }
+
+        let randRow, randRowIndex;
+        if (bShouldAddDrop) {
+            // Pick random empty row index to add drop
+            randRowIndex = Math.floor(Math.random() * emptyRowsNodeArr.length);
+            randRow = emptyRowsNodeArr[randRowIndex];
+
+            // Add class 'drop' to random row
+            this.addDropToRow(randRow);
+
+            // If should add drop clear, remove row from emptyRowsNodeArr before
+            if (bShouldAddDropClear)
+                emptyRowsNodeArr.splice(randRowIndex, 1);
+        }
+
+        if (bShouldAddDropClear) {
+            // Pick random empty row index to add drop-clear
+            randRowIndex = Math.floor(Math.random() * emptyRowsNodeArr.length);
+            randRow = emptyRowsNodeArr[randRowIndex];
+
+            // Add class 'drop-clear' to random row
+            this.addDropClearToRow(randRow);
+        }
+    }
+
+    addDropToRow(rowElement) {
+        const newDrop = new MatrixScrollDrop(rowElement);
         // If no drops in column, push to array
         if (!this.drops.length) 
             this.drops.push(newDrop);
         else { // Else set newDrop into sorted position of this.drops
             for (let i = 0; i < this.drops.length; i++) {
-                if (index < this.drops[i].index) {
+                if (+newDrop.element.dataset.row < +this.drops[i].element.dataset.row) {
                     this.drops.splice(i, 0, newDrop);
                     break;
                 }
@@ -113,55 +196,23 @@ class MatrixScrollingLettersColumn {
         }
     }
 
-    addDropClear(rowElement, index) {
-        const newDropClear = new MatrixScrollingLettersDropClear(rowElement, index);
+    addDropClearToRow(rowElement) {
+        const newDropClear = new MatrixScrollDropClear(rowElement);
         // If no drop-clears in column, push to array
         if (!this.dropClears.length)
             this.dropClears.push(newDropClear);
         else { // Set newDropClear into sorted position of this.dropClears
             for (let i = 0; i < this.dropClears.length; i++) {
-                if (index < this.dropClears[i].index) {
+                if (+newDropClear.element.dataset.row < +this.dropClears[i].element.dataset.row) {
                     this.dropClears.splice(i, 0, newDropClear);
                     break;
                 }
             }
         }
     }
-
-    addRandomDrop() {
-        const rowIndicesToAddClass = [];
-        // Find row indices with no 'drop', 'wet', or 'drop-clear' class (only 'row')
-        this.rows.forEach((row, index) => {
-            if (!row.classList.contains('drop') && !row.classList.contains('wet') && !row.classList.contains('drop-clear'))
-                rowIndicesToAddClass.push(index);
-        });
-        if (!rowIndicesToAddClass) return;
-        
-        // Pick random row index to add drop
-        const randIndex = rowIndicesToAddClass[Math.floor(Math.random() * rowIndicesToAddClass.length)];
-
-        // Add class 'drop' to random row
-        this.addDrop(this.rows[randIndex], randIndex);
-    }
-
-    addRandomDropClear() {
-        const rowIndicesToAddClass = [];
-        // Find row indices with no 'drop', 'wet', or 'drop-clear' class (only 'row')
-        this.rows.forEach((row, index) => {
-            if (!row.classList.contains('drop') && !row.classList.contains('wet') && !row.classList.contains('drop-clear'))
-                rowIndicesToAddClass.push(index);
-        });
-        if (!rowIndicesToAddClass) return;
-        
-        // Pick random row index to add drop-clears
-        const randIndex = rowIndicesToAddClass[Math.floor(Math.random() * rowIndicesToAddClass.length)];
-
-        // Add class 'drop-clear' to random row
-        this.addDropClear(this.rows[randIndex], randIndex);
-    }
 }
 
-class MatrixScrollingLetters {
+class MatrixScroll {
     // Static Properties
 
     static charCodes = [
@@ -198,21 +249,20 @@ class MatrixScrollingLetters {
      * @param {Number} tickInterval 
      * @param {Number} randDropsToAddPerTick 
      */
-    constructor(tickInterval = 300, randDropsToAddPerTick = 5) {
+    constructor(tickInterval = 300) {
         this.mainNode = document.querySelector('main');
 
         this.updateRowsNColumnsCount();
+
         window.addEventListener('resize', function() {
             this.updateRowsNColumnsCount();
         }.bind(this));
 
-        this.randDropsToAddPerTick = randDropsToAddPerTick;
         this.tickInterval = tickInterval;
         this.isPlaying = false;
+
         this.play();
     }
-
-    // Getters/Setters
 
     // Methods
 
@@ -220,21 +270,6 @@ class MatrixScrollingLetters {
     tick() {
         // Tick each column
         this.columns.forEach(col => col.tick());
-
-        // Get random number of drops to add
-        const dropsToAdd = Math.floor(Math.random() * this.randDropsToAddPerTick) + 1;
-        const dropClearsToAdd = Math.floor(Math.random() * this.randDropsToAddPerTick) + 1;
-
-        // Add drops and drop-clears to random columns
-        let randColIndex;
-        for (let i = 0; i < dropsToAdd; i++) {
-            randColIndex = Math.floor(Math.random() * this.columns.length);
-            this.columns[randColIndex].addRandomDrop();
-        }
-        for (let i = 0; i < dropClearsToAdd; i++) {
-            randColIndex = Math.floor(Math.random() * this.columns.length);
-            this.columns[randColIndex].addRandomDropClear();
-        }
     }
 
     /** Start tick loops on set interval to play scrolling letters. */
@@ -294,36 +329,18 @@ class MatrixScrollingLetters {
             for (let j = 0; j < numRows; j++) {
                 newRow = document.createElement('div');
                 newRow.classList.add('row');
-                newRow.textContent = String.fromCodePoint(MatrixScrollingLetters.getRandomCharCode());
+                newRow.textContent = String.fromCodePoint(MatrixScroll.getRandomCharCode());
+                newRow.dataset.col = i;
+                newRow.dataset.row = j;
                 newCol.append(newRow);
                 rowsPerColumn.push(newRow);
             }
             this.mainNode.append(newCol);
-            this.columns.push(new MatrixScrollingLettersColumn(newCol, rowsPerColumn));
+            this.columns.push(new MatrixScrollColumn(newCol, rowsPerColumn));
         }
     }    
 }
 
-// (function () {
-//     const matrixScrollingLetters = new MatrixScrollingLetters();
-// })();
-const matrixScrollingLetters = new MatrixScrollingLetters();
-
-// str.codePointAt(index)
-// Old Italic: 𐌀 (66304) - 𐌚 (66330) [27]
-// Japanese Katakana: ア (12450) - ン (12531) [82]
-// Arabic Numerals: ٠ (1632) - ٩ (1641) [10]
-
-function getRandomCharCodeUnitTests(numTests = 10000) {
-    let failCount = 0;
-    unitTest: for (let i = 0; i < numTests; i++) {
-        const rand = getRandomCharCode();
-        for (const charSet of CHAR_CODES) {
-            if (rand >= charSet[0] && rand <= charSet[1]) {
-                continue unitTest;
-            }
-        }
-        failCount++;
-    }
-    console.log(`Tests Failed: ${failCount}`);
-}
+(function () {
+    window.matrixScroll = new MatrixScroll();
+})();
