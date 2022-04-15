@@ -311,15 +311,13 @@ class MatrixScroll {
 
         const htmlNode = document.querySelector('html');
         // Calculate number of columns based on window size
-        const clientWidth = htmlNode.clientWidth;
         const columnWidth = +window.getComputedStyle(this.mainNode, null)
             .getPropertyValue('font-size')
             .split('px')[0];
-        const numColumns = Math.floor(clientWidth / columnWidth);
+        const numColumns = Math.floor(this.mainNode.clientWidth / columnWidth);
 
         // Calculate number of rows based on window size
-        const clientHeight = htmlNode.clientHeight;
-        const numRows = Math.floor(clientHeight / (1.5 * columnWidth));
+        const numRows = Math.floor(this.mainNode.clientHeight / (1.5 * columnWidth));
 
         let newCol, newRow, rowsPerColumn;
         for (let i = 0; i < numColumns; i++) {

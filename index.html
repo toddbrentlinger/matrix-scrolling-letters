@@ -9,6 +9,14 @@
     <script defer src="./main.js"></script>
 </head>
 <body>
+    <div class="slide-down-container">
+        <div class="slide-down">
+            <header class="slide-down-content">
+                <h1>Matrix Scrolling Code</h1>
+            </header>
+        </div>
+    </div>
+
     <main>
         <div class="col">
             <div class="row">a</div>
@@ -21,5 +29,29 @@
             <div class="row">f</div>
         </div>
     </main>
+
+    <div class="slide-up-container">
+        <div class="slide-up">
+            <footer class="slide-up-content">
+                <p>
+                    <small>Source Code © <time id="copyright-year">2022</time> Todd Brentlinger, Santa Cruz, CA, USA. All Rights Reserved.</small>
+                </p>
+            </footer>
+        </div>
+    </div>
+
+    <script>
+        (function (initialYear) {
+            const copyright = document.getElementById('copyright-year');
+            if (copyright) {
+                const currYear = new Date().getFullYear();
+                if (currYear > initialYear) {
+                    copyright.textContent = `${initialYear}-${currYear}`;
+                } else {
+                    copyright.textContent = initialYear;
+                }
+            }
+        })(2022);
+    </script>
 </body>
 </html>

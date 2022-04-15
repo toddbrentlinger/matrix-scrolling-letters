@@ -1,0 +1,7 @@
+4-15-22
+
+Inputs to add inside header:
+    - Play/Pause Button (if paused, display 'Play', else display 'Pause')
+    - Reset Button
+    - Font Size Percentage Number OR Slider (scale applied to root font size rem) []
+    - Update Interval Number OR Slider [50ms, 100s] 
